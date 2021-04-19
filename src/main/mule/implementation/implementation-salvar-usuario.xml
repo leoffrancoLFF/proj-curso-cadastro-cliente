@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd 
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+	<sub-flow name="implementation-salvar-usuario-main"
+		doc:id="b1c91d2d-f943-4c06-975b-6f0f67c91008">
+		<flow-ref doc:name="Salvar Tabela Usuario" doc:id="6c1b0c38-1324-4019-95b5-60ade581362e" name="implementation-salvar-usuario-salvar-table-client"/>
+		<flow-ref doc:name="Salvar Tabela Endereço" doc:id="edad84c1-0016-413b-9fef-0c936cbe6529" name="implementation-salvar-usuario-salvar-table-address"/>
+		<flow-ref doc:name="Salvar Tabela Telefone" doc:id="e0686737-af5d-419c-af2b-b5806d65f0d4" name="implementation-salvar-usuario-salvar-table-phone"/>
+		<ee:transform doc:name="Transform Message"
+			doc:id="146779d0-55b9-4820-be69-9f2bd59c5eed">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    message: "Cliente criado com sucesso.",
+    id_client: vars.idClient
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	
+</sub-flow>
+	<sub-flow name="implementation-salvar-usuario-salvar-table-client" doc:id="7eae9d86-8ab4-4f58-92ec-753cdf51c5a7" >
+		<ee:transform doc:name="Transform Message" doc:id="bfbeb3f2-98f0-492b-ba2b-c91eedd45bfd">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	pNome: vars.inputPayload.nome,
+	pSobrenome: vars.inputPayload.sobrenome 
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<db:insert doc:name="Insert Cliente" doc:id="503f67ab-647e-4363-b75b-65d41d0edbf0" config-ref="Heroku-Postgres" autoGenerateKeys="true">
+			<db:sql><![CDATA[INSERT INTO public.client(
+	name, lastname)
+VALUES (:pNome, :pSobrenome) RETURNING id_client;]]></db:sql>
+			<db:input-parameters><![CDATA[#[payload]]]></db:input-parameters>
+			<db:auto-generated-keys-column-names>
+				<db:auto-generated-keys-column-name value="id_client" />
+			</db:auto-generated-keys-column-names>
+		</db:insert>
+		<set-variable value="#[(payload.generatedKeys.id_client default 0) as String]" doc:name="Id Client" doc:id="443bad1b-0f3d-441e-985d-4a5d7907f09d" variableName="idClient"/>
+	</sub-flow>
+	<sub-flow name="implementation-salvar-usuario-salvar-table-address" doc:id="5b1da5d6-07b9-4402-93f7-00433d03bffb" >
+		<ee:transform doc:name="Transform Message" doc:id="049d1ce5-301f-48dc-ae15-67d26c2a8f75" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+var endereco = vars.inputPayload.endereco
+---
+{
+	pId_cliente: vars.idClient,
+	pCep: endereco.cep default "",
+	pCidade: endereco.cidade,
+	pEstado: endereco.estado,
+	pRua: endereco.rua
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<db:insert doc:name="Insert Endereco" doc:id="1ef85d9d-0d0b-4c9a-9ca3-a856156cc24d" config-ref="Heroku-Postgres">
+			<db:sql ><![CDATA[INSERT INTO public.address(
+	id_client, zip_code, city, uf, street)
+VALUES (:pId_cliente, :pCep, :pCidade, :pEstado, :pRua);]]></db:sql>
+			<db:input-parameters ><![CDATA[#[payload]]]></db:input-parameters>
+			<db:auto-generated-keys-column-names >
+				<db:auto-generated-keys-column-name value="id_client" />
+			</db:auto-generated-keys-column-names>
+		</db:insert>
+	</sub-flow>
+	<sub-flow name="implementation-salvar-usuario-salvar-table-phone" doc:id="dd5d20ad-913a-46b1-bf33-50f5af18a2c0" >
+		<ee:transform doc:name="Transform Message" doc:id="3a983d2d-6d4d-45b9-92de-4c80720249f9" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+var telefone = vars.inputPayload.telefones
+var empty_string = ""
+---
+telefone map (
+        {
+        	pId_cliente: vars.idClient,
+            pNumero_telefone: ($.ddd as String default "") ++ ($.numero as String default "")
+        }
+    )]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<db:bulk-insert doc:name="Bulk insert" doc:id="06dde8ee-8ef1-4f76-ad54-720f038f377d" config-ref="Heroku-Postgres">
+			<db:sql ><![CDATA[INSERT INTO public.phone(
+	id_client, phone_number)
+VALUES (:pId_cliente, :pNumero_telefone);]]></db:sql>
+		</db:bulk-insert>
+	</sub-flow>
+</mule>

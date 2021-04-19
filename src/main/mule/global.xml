@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd">
+	<db:config name="Heroku-Postgres" doc:name="Database Config" doc:id="4f407b52-4ec1-4711-8917-0a766f1a48c6" >
+		<db:generic-connection url="jdbc:postgresql://ec2-54-2s05-183-19.compute-1.amazonaws.com:5432/d4ef06a3f9a3m6" driverClassName="org.postgresql.Driver" user="zsfoztmxrpkwre" password="4b020bcf43f264b4b18f4675b3e02d893ccf66b6e91a03aeebf792bf13d35557" />
+	</db:config>
+	<api-gateway:autodiscovery apiId="16714059" ignoreBasePath="true" doc:name="API Autodiscovery" doc:id="fbe82bac-bed4-4bae-94cf-cfcb3954b22c" flowRef="curso-mulesoft-cadastro-cliente-main" />
+</mule>

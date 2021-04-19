@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<sub-flow name="implementation-health-check-main" doc:id="8d7406b3-5366-4272-ad7d-b28f853c17e5" >
+		<flow-ref doc:name="Status BD" doc:id="e9874110-8a4e-452d-bf4e-0b5c18fc06b4" name="implementation-health-check-BD" target="StatusBD"/>
+		<ee:transform doc:name="Transform Message" doc:id="36389274-7e40-48b3-ae4f-3654e1c6323c" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+    api_rest: {
+        nome: "API Cadastro Clientes",
+        status: "OK"
+    },
+    banco_de_dados: {
+        nome: "Postgresql Heroku",
+        status: vars.StatusBD
+    }
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</sub-flow>
+	<sub-flow name="implementation-health-check-BD" doc:id="57d6cc85-baf6-4027-b73b-dcaf25ce18d2" >
+		<try doc:name="Try" doc:id="fe32e508-1682-479d-b986-54a981628904" >
+			<db:select doc:name="Select" doc:id="113a0794-2937-4084-83a4-a7a3854cc931" config-ref="Heroku-Postgres">
+			<db:sql><![CDATA[select 0]]></db:sql>
+		</db:select>
+			<set-payload value="OK" doc:name="Status OK" doc:id="50623b49-5cfa-4828-b817-781fc571d5f5" />
+			<error-handler >
+				<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="2366db5a-2ba1-4b0a-9b18-ab466a65773f" >
+					<set-payload value='#["NOK: " ++ error.description as String default error.errorMessage as String]' doc:name="Status OK" doc:id="25bf0127-ca87-4b28-9a49-a4a5c43ee455" />
+				</on-error-continue>
+			</error-handler>
+		</try>
+	</sub-flow>
+</mule>
